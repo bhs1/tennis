@@ -1,8 +1,7 @@
 import requests
 
-import requests
 
-# Consider setting SessionExpirationTime to a date in the future?
+# Consider making SessionExpirationTime some time in the future?
 cookies = {
     'PHPSESSID': 'fs74bsne1lrk6bpbfbnh5ble7g',
     'SessionExpirationTime': '1671028573',
@@ -62,4 +61,4 @@ response = requests.post(
     data=data,
 )
 
-print(str(response.text))
+print(response.text)
