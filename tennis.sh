@@ -1,2 +1,3 @@
 #!/bin/bash
-source virtual_env/bin/activate
+source venv/bin/activate
+python3 tennis.py
