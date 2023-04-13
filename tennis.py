@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 
+###################### START CONSTANTS ####################
+
 cookies = {
     'PHPSESSID': '3q6gjdrceq2pp6geqrnpfkeh6b',
     'SessionExpirationTime': '1681388464',
@@ -32,33 +34,54 @@ params = {
     'ajax': 'true',
 }
 
-data = {
-    'reservation-list-page': '1',
-    'user_id': '25397',
-    'event_member_token_reserve_court': '2410e5f6c2ba7236467267b371223e6c',
-    'current_guest_count': '0',
-    'component': '2',
-    'club': '-1',
-    'location': '-1',
-    'host': '25397',
-    'ball_machine': '0',
-    'date': '04/13/2023',
-    'interval': '60',
-    'time-reserve': '',
-    'location-reserve': '',
-    'surface-reserve': '',
-    'courtsnotavailable': '',
-    'join-waitlist-case': '1',
-}
+#################### END CONSTANTS #############################
 
-response = requests.post(
-    'https://gtc.clubautomation.com/event/reserve-court-new',
-    params=params,
-    cookies=cookies,
-    headers=headers,
-    data=data,
-)
+###################### FUNCTIONS ###############################
 
+def get_raw_response(date, interval):
+    '''
+    date: E.g. '04/13/2023'
+    interval: '30', '45', or '60'
+    '''
+    
+    data = {
+        'reservation-list-page': '1',
+        'user_id': '25397',
+        'event_member_token_reserve_court': '2410e5f6c2ba7236467267b371223e6c',
+        'current_guest_count': '0',
+        'component': '2',
+        'club': '-1',
+        'location': '-1',
+        'host': '25397',
+        'ball_machine': '0',
+        'date': date,
+        'interval': interval,
+        'time-reserve': '',
+        'location-reserve': '',
+        'surface-reserve': '',
+        'courtsnotavailable': '',
+        'join-waitlist-case': '1',
+    }
+
+    response = requests.post(
+        'https://gtc.clubautomation.com/event/reserve-court-new',
+        params=params,
+        cookies=cookies,
+        headers=headers,
+        data=data,
+    )
+    return response
+
+########################## FUNCTIONS ###############################
+
+# Parse inputs
+
+input_date = '04/13/2023'
+input_interval = '60'
+input_time_range = ['4:00pm', '7:00pm']
+
+
+response = get_raw_response(input_date, input_interval)
 soup = BeautifulSoup(response.text, 'html.parser')
 
 activities = {}
@@ -69,5 +92,7 @@ for td in soup.find_all('td'):
     for a in td.find_all('a'):
         times.append(a.text.strip())
     activities[activity] = times
+
+# Next: Filter times by input time range
 
 print(activities)
