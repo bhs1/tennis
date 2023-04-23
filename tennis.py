@@ -39,6 +39,26 @@ params = {
 
 #################### END CONSTANTS #############################
 
+###################### PARSE INPUT #############################
+# Parse inputs
+parser = argparse.ArgumentParser(description='Accept input variables')
+
+parser.add_argument('--input_date', type=str, help='Input date in mm/dd/yyyy format')
+parser.add_argument('--input_interval', type=int, help='Input interval in minutes')
+parser.add_argument('--input_time_range', nargs='+', type=str, help='Input time range as a list of start and end times in hh:mm[am/pm] format')
+parser.add_argument('--api_token', help="Your api token")
+parser.add_argument('--user_token', help="Your user token")
+parser.add_argument('--debug', action='store_true', help='Enable debug mode')
+
+args = parser.parse_args()
+
+input_date = args.input_date
+input_interval = args.input_interval
+input_time_range = args.input_time_range
+user_token=args.user_token
+api_token=args.api_token
+_debug = args.debug
+###################### END PARSE INPUT #############################
 ###################### FUNCTIONS ###############################
 
 def get_raw_response(date, interval):
@@ -87,12 +107,17 @@ def filter_activities_by_time(activities, input_time_range):
             filtered_activities[activity] = filtered_times
     return filtered_activities
 
-def send_notification(title, body, url, pb_token):
+# TODO: Fix this so that you can send to specific devices with specific times.
+def send_notification(title, body, url, api_token, user_token):
+    print("Message sent.")
+    if _debug:
+        print("user_token,api_token=",user_token,api_token)
+
     conn = http.client.HTTPSConnection("api.pushover.net:443")
     conn.request("POST", "/1/messages.json",
     urllib.parse.urlencode({
-        "token": "asg21wetbwa33qgk8vfhm7dodat6vp",
-        "user": "uc1dk4b66zk4kpbztp8dk1wzow6j2r",
+        "token": api_token,
+        "user": user_token,
         "message": body,
         "url": url,
         "title": title,
@@ -101,28 +126,10 @@ def send_notification(title, body, url, pb_token):
 
 ########################## FUNCTIONS ##############################
 
-
-# Parse inputs
-parser = argparse.ArgumentParser(description='Accept input variables')
-
-parser.add_argument('--input_date', type=str, help='Input date in mm/dd/yyyy format')
-parser.add_argument('--input_interval', type=int, help='Input interval in minutes')
-parser.add_argument('--input_time_range', nargs='+', type=str, help='Input time range as a list of start and end times in hh:mm[am/pm] format')
-parser.add_argument('--pb_token', help="Your pushbot token")
-parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-
-args = parser.parse_args()
-
-input_date = args.input_date
-input_interval = args.input_interval
-input_time_range = args.input_time_range
-pb_token=args.pb_token
-debug = args.debug
-
 # Get response
 response = get_raw_response(input_date, input_interval)
 
-if debug:
+if _debug:
     print("Raw response:\n"  + response.text)
 
 soup = BeautifulSoup(response.text, 'html.parser')
@@ -143,6 +150,6 @@ filtered_activities = filter_activities_by_time(activities, input_time_range)
 
 # If filtered acttivities is not empty, send a pushbullet notification (with info + link)
 if len(filtered_activities) > 0:
-    send_notification("Activities available!", filtered_activities, 'https://gtc.clubautomation.com', pb_token)
+    send_notification("Activities available!", filtered_activities, 'https://gtc.clubautomation.com', api_token, user_token)
 
 print(filtered_activities)
