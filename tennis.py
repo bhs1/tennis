@@ -97,11 +97,13 @@ def get_raw_response(date, interval):
 
 def filter_activities_by_time(activities, input_time_range):
     filtered_activities = {}
+    lower_time_obj = datetime.strptime(input_time_range[0], '%I:%M%p')
+    upper_time_obj = datetime.strptime(input_time_range[1], '%I:%M%p')
     for activity, times in activities.items():
         filtered_times = []
         for time_str in times:
             time_obj = datetime.strptime(time_str, '%I:%M%p')
-            if input_time_range[0].lower() <= time_str.lower() <= input_time_range[1].lower():
+            if lower_time_obj <= time_obj and time_obj <= upper_time_obj:
                 filtered_times.append(time_str)
         if filtered_times:
             filtered_activities[activity] = filtered_times
@@ -145,6 +147,9 @@ for td in soup.find_all('td'):
     for a in td.find_all('a'):
         times.append(a.text.strip())
     activities[activity] = times
+
+if _debug:
+    print(activities)
 
 filtered_activities = filter_activities_by_time(activities, input_time_range)
 
