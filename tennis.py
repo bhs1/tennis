@@ -49,6 +49,7 @@ parser.add_argument('--input_time_range', nargs='+', type=str, help='Input time 
 parser.add_argument('--api_token', help="Your api token")
 parser.add_argument('--user_token', help="Your user token")
 parser.add_argument('--debug', action='store_true', help='Enable debug mode')
+parser.add_argument('--activity_filter', type=str, help='Tennis or  Pickleball / Mini Tennis')
 
 args = parser.parse_args()
 
@@ -58,6 +59,8 @@ input_time_range = args.input_time_range
 user_token=args.user_token
 api_token=args.api_token
 _debug = args.debug
+activity_filter = args.activity_filter
+
 ###################### END PARSE INPUT #############################
 ###################### FUNCTIONS ###############################
 
@@ -95,11 +98,14 @@ def get_raw_response(date, interval):
     )
     return response
 
-def filter_activities_by_time(activities, input_time_range):
+def filter_activities_by_time_and_activity(activities, input_time_range, activity_filter):
     filtered_activities = {}
     lower_time_obj = datetime.strptime(input_time_range[0], '%I:%M%p')
     upper_time_obj = datetime.strptime(input_time_range[1], '%I:%M%p')
     for activity, times in activities.items():
+        # Filter by activity filter
+        if activity_filter != '' and activity != activity_filter:
+            continue
         filtered_times = []
         for time_str in times:
             time_obj = datetime.strptime(time_str, '%I:%M%p')
@@ -137,7 +143,9 @@ if _debug:
 soup = BeautifulSoup(response.text, 'html.parser')
 
 if 'First time here' in response.text:
-    print("ERROR: Got login page. Try replacing PHP Session ID with a fresh one!")
+    e_string = "ERROR: Got login page. Try replacing PHP Session ID with a fresh one!"
+    print(e_string)
+    send_notification("ERROR!", e_string, "",api_token, user_token)
 
 activities = {}
 
@@ -146,12 +154,12 @@ for td in soup.find_all('td'):
     times = []
     for a in td.find_all('a'):
         times.append(a.text.strip())
-    activities[activity] = times
+    activities[activity] = times 
 
 if _debug:
     print(activities)
 
-filtered_activities = filter_activities_by_time(activities, input_time_range)
+filtered_activities = filter_activities_by_time_and_activity(activities, input_time_range, activity_filter)
 
 # If filtered acttivities is not empty, send a pushbullet notification (with info + link)
 if len(filtered_activities) > 0:
