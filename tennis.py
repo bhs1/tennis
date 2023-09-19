@@ -98,10 +98,12 @@ def get_raw_response(date, interval):
     )
     return response
 
-def filter_activities_by_time_and_activity(activities, input_time_range, activity_filter):
+def filter_activities_by_time_and_activity(activities, input_time_range, raw_activity_filter):
     filtered_activities = {}
     lower_time_obj = datetime.strptime(input_time_range[0], '%I:%M%p')
     upper_time_obj = datetime.strptime(input_time_range[1], '%I:%M%p')
+    activity_filter = strip_activity(raw_activity_filter)
+    
     for activity, times in activities.items():
         # Filter by activity filter
         if activity_filter != '' and activity != activity_filter:
@@ -132,6 +134,9 @@ def send_notification(title, body, url, api_token, user_token):
     }), { "Content-type": "application/x-www-form-urlencoded" })
     conn.getresponse()
 
+def strip_activity(activity):
+    return activity.replace("-", "").replace(" ", "")
+
 ########################## FUNCTIONS ##############################
 
 # Get response
@@ -154,7 +159,7 @@ for td in soup.find_all('td'):
     times = []
     for a in td.find_all('a'):
         times.append(a.text.strip())
-    activities[activity] = times 
+    activities[strip_activity(activity)] = times 
 
 if _debug:
     print(activities)
