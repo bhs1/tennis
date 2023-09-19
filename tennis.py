@@ -8,7 +8,7 @@ import http.client, urllib
 ###################### START CONSTANTS ####################
 
 cookies = {
-    'PHPSESSID': 'aqvhp2orooej1li87n4cev63hk',
+    'PHPSESSID': 'hgu5p7d6sdt94qmtlagdik4t4m',
     'SessionExpirationTime': '1696077770',
     'isLoggedIn': '1',
 }
