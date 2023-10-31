@@ -9,7 +9,7 @@ import http.client, urllib
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
-    'PHPSESSID': 'no3tnpclhsqacvjhfbrr217gtk',
+    'PHPSESSID': '715u9dqbukhsk7po7n6oe0rlq9',
     'SessionExpirationTime': '1696077770',
     'isLoggedIn': '1',
 }
@@ -156,6 +156,8 @@ if 'First time here' in response.text:
 activities = {}
 
 for td in soup.find_all('td'):
+    if _debug:
+        print('activity:\n' + activity)
     activity = td.find('b').text
     times = []
     for a in td.find_all('a'):
