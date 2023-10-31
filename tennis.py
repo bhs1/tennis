@@ -156,9 +156,10 @@ if 'First time here' in response.text:
 activities = {}
 
 for td in soup.find_all('td'):
-    if _debug:
-        print('activity:\n' + activity)
-    activity = td.find('b').text
+    activity = td.find('b')
+    if activity is None:
+        continue
+    activity = activity.text
     times = []
     for a in td.find_all('a'):
         times.append(a.text.strip())
