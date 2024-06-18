@@ -7,8 +7,7 @@ import argparse
 import json
 import http.client
 import urllib
-
-# TODO(Ben, P2): See how we handle duplicates case.
+import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
 
@@ -99,6 +98,7 @@ def filter_activities_by_time_and_activity(activities, input_time_range, raw_act
     activity_filter = strip_activity(raw_activity_filter)
 
     for activity, times in activities.items():
+        activity = strip_activity(activity)
         # Filter by activity filter
         if activity_filter != '' and activity != activity_filter:
             continue
@@ -128,14 +128,18 @@ def send_notification(title, body, url, api_token, user_token):
                  }), {"Content-type": "application/x-www-form-urlencoded"})
     conn.getresponse()
 
+
 def strip_activity(activity):
     return activity.replace("-", "").replace(" ", "")
 
+
 def fetch_user_queries():
     # TODO(Charlie, Dice): Fetch these from DB.
-    return {'000-000-0000': {'date': '06/24/2024', 'interval': '60', 'time_range': ['12:00AM', '11:00PM'], 'activity_filter': 'Pickleball / Mini Tennis', 'name': 'Fabian'},
-            '111-111-1111': {'date': '06/25/2024', 'interval': '60', 'time_range': ['3:00PM', '8:00PM'], 'activity_filter': 'Tennis', 'name': 'Johnboy'}}
-    
+    return {'000-000-0000': {'date': '06/18/2024', 'interval': '30', 'time_range': ['11:00AM', '5:00PM'], 'activity_filter': 'Pickleball / Mini Tennis', 'name': 'Fabian'},
+            '111-111-1111': {'date': '06/25/2024', 'interval': '60', 'time_range': ['3:00PM', '8:00PM'], 'activity_filter': 'Tennis', 'name': 'Johnboy'},
+            '222-222-2222': {'date': '06/18/2024', 'interval': '30', 'time_range': ['11:00AM', '5:00PM'], 'activity_filter': 'Tennis', 'name': 'Jacobi'}}
+
+
 def fetch_available_times(input_date, input_interval, input_time_range, activity_filter):
     # Get response
     response = get_raw_response(input_date, input_interval)
@@ -150,25 +154,16 @@ def fetch_available_times(input_date, input_interval, input_time_range, activity
         print(e_string)
         send_notification("ERROR!", e_string, "", api_token, user_token)
 
-    activities = {}
-
-    for td in soup.find_all('td'):
-        activity = td.find('b')
-        if activity is None:
-            continue
-        activity = activity.text
-        times = []
-        for a in td.find_all('a'):
-            times.append(a.text.strip())
-        activities[strip_activity(activity)] = times
+    activities = response_ai_gen.func(response.text)
 
     if _debug:
         print(activities)
 
     filtered_activities = filter_activities_by_time_and_activity(
-        activities, input_time_range, activity_filter)
-    
+        activities, input_time_range, activity_filter)    
+
     return filtered_activities
+
 
 ########################## FUNCTIONS ##############################
 if __name__ == "__main__":
@@ -188,7 +183,8 @@ if __name__ == "__main__":
         input_interval = query['interval']
         input_time_range = query['time_range']
         activity_filter = query['activity_filter']
-        filtered_activities = fetch_available_times(input_date, input_interval, input_time_range, activity_filter)
+        filtered_activities = fetch_available_times(
+            input_date, input_interval, input_time_range, activity_filter)
         if len(filtered_activities) > 0:
             activity_results[phone] = filtered_activities
 
@@ -200,13 +196,15 @@ if __name__ == "__main__":
     # Add to log
     try:
         with open('logs/activity_results.txt', 'a') as f:
-            entry = {"timestamp": str(datetime.now()), "data": activity_results}
+            entry = {"timestamp": str(datetime.now()),
+                     "data": activity_results}
             json.dump(entry, f)
             f.write("\n")
     except FileNotFoundError:
         os.makedirs('logs', exist_ok=True)
         with open('logs/activity_results.txt', 'a') as f:
-            entry = {"timestamp": str(datetime.now()), "data": activity_results}
+            entry = {"timestamp": str(datetime.now()),
+                     "data": activity_results}
             json.dump(entry, f)
             f.write("\n")
 
