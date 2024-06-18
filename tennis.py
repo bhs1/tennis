@@ -10,8 +10,9 @@ import urllib
 import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
-MUTE = False
-MUTED_NUMBERS = ['9179038697', 'test-test-test']
+MUTE = True
+MUTED_NUMBERS = ['9179038697', 'test-test-test', 'test', 'test1']
+
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
@@ -134,7 +135,7 @@ def send_notification(title, body, url, api_token, user_token):
 def strip_activity(activity):
     return activity.replace("-", "").replace(" ", "")
 
-
+# Testing only.
 def fetch_user_queries():
     
     # TODO(Charlie, Dice): Fetch these from DB.
@@ -186,6 +187,13 @@ def fetch_and_convert_data():
             phone_number = item['phone_number']
             start_time = item['start_time']
             end_time = item['end_time']
+            activity = item['activity']
+
+            # Convert UI drop down activity to correct format.
+            if activity == 'Pickleball':
+                activity = 'Pickleball / Mini Tennis'
+            elif activity is None:
+                activity = 'Tennis'
             
             # Skip test
             if phone_number in MUTED_NUMBERS:
@@ -205,18 +213,14 @@ def fetch_and_convert_data():
                 'date': date,
                 'interval': '60',  # Default interval
                 'time_range': [start_time_formatted, end_time_formatted],  # Default time range
-                'activity_filter': 'Tennis',  # Default activity filter
+                'activity_filter': activity,  # Default activity filter
                 'name': 'Dummy'  # Default name
             }
-        
         return converted_data
     else:
         print("Failed to fetch data from API")
         return {}
 
-# Example usage
-converted_data = fetch_and_convert_data()
-print(converted_data)
 
 ########################## FUNCTIONS ##############################
 if __name__ == "__main__":
@@ -231,7 +235,7 @@ if __name__ == "__main__":
 
     queries = fetch_and_convert_data()
     activity_results = {}
-    for phone, query in queries.items():
+    for phone, query in queries.items():        
         input_date = query['date']
         input_interval = query['interval']
         input_time_range = query['time_range']
