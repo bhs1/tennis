@@ -10,8 +10,11 @@ import urllib
 import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
-MUTE = True
+MUTE = False
 MUTED_NUMBERS = ['9179038697', 'test-test-test', 'test', 'test1']
+ALREADY_BOOKED_NUMBERS = [
+    '3042765830' # Akshay
+]
 
 
 cookies = {
