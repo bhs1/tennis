@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -9,8 +11,8 @@ import http.client, urllib
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
-    'PHPSESSID': '715u9dqbukhsk7po7n6oe0rlq9',
-    'SessionExpirationTime': '1696077770',
+    'PHPSESSID': '94jvsojuojt2cvo66smu0puor5',
+    'SessionExpirationTime': '1718716227',
     'isLoggedIn': '1',
 }
 
@@ -47,8 +49,6 @@ parser = argparse.ArgumentParser(description='Accept input variables')
 parser.add_argument('--input_date', type=str, help='Input date in mm/dd/yyyy format')
 parser.add_argument('--input_interval', type=int, help='Input interval in minutes')
 parser.add_argument('--input_time_range', nargs='+', type=str, help='Input time range as a list of start and end times in hh:mm[am/pm] format')
-parser.add_argument('--api_token', help="Your api token")
-parser.add_argument('--user_token', help="Your user token")
 parser.add_argument('--debug', action='store_true', help='Enable debug mode')
 parser.add_argument('--activity_filter', type=str, help='Tennis or  Pickleball / Mini Tennis')
 
@@ -57,8 +57,6 @@ args = parser.parse_args()
 input_date = args.input_date
 input_interval = args.input_interval
 input_time_range = args.input_time_range
-user_token=args.user_token
-api_token=args.api_token
 _debug = args.debug
 activity_filter = args.activity_filter
 
@@ -140,38 +138,48 @@ def strip_activity(activity):
 
 ########################## FUNCTIONS ##############################
 
-# Get response
-response = get_raw_response(input_date, input_interval)
+if __name__ == "__main__":
+        # Load environment variables from .env file
+    load_dotenv()
 
-if _debug:
-    print("Raw response:\n"  + response.text)
+    # Now you can use os.getenv to access your variables
+    api_token = os.getenv('PUSHOVER_API_TOKEN')
+    user_token = os.getenv('PUSHOVER_USER_TOKEN')
+    print(f"API_TOKEN: {api_token}")
+    print(f"USER_TOKEN: {user_token}")
+    
+    # Get response
+    response = get_raw_response(input_date, input_interval)
 
-soup = BeautifulSoup(response.text, 'html.parser')
+    if _debug:
+        print("Raw response:\n" + response.text)
 
-if 'First time here' in response.text:
-    e_string = "ERROR: Got login page. Try replacing PHP Session ID with a fresh one!"
-    print(e_string)
-    send_notification("ERROR!", e_string, "",api_token, user_token)
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-activities = {}
+    if 'First time here' in response.text:
+        e_string = "ERROR: Got login page. Try replacing PHP Session ID with a fresh one!"
+        print(e_string)
+        send_notification("ERROR!", e_string, "", api_token, user_token)
 
-for td in soup.find_all('td'):
-    activity = td.find('b')
-    if activity is None:
-        continue
-    activity = activity.text
-    times = []
-    for a in td.find_all('a'):
-        times.append(a.text.strip())
-    activities[strip_activity(activity)] = times 
+    activities = {}
 
-if _debug:
-    print(activities)
+    for td in soup.find_all('td'):
+        activity = td.find('b')
+        if activity is None:
+            continue
+        activity = activity.text
+        times = []
+        for a in td.find_all('a'):
+            times.append(a.text.strip())
+        activities[strip_activity(activity)] = times 
 
-filtered_activities = filter_activities_by_time_and_activity(activities, input_time_range, activity_filter)
+    if _debug:
+        print(activities)
 
-# If filtered acttivities is not empty, send a pushbullet notification (with info + link)
-if len(filtered_activities) > 0:
-    send_notification("Activities available!", filtered_activities, 'https://gtc.clubautomation.com', api_token, user_token)
+    filtered_activities = filter_activities_by_time_and_activity(activities, input_time_range, activity_filter)
 
-print(filtered_activities)
+    # If filtered activities is not empty, send a pushbullet notification (with info + link)
+    if len(filtered_activities) > 0:
+        send_notification("Activities available!", filtered_activities, 'https://gtc.clubautomation.com', api_token, user_token)
+
+    print(filtered_activities)
