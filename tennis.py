@@ -199,7 +199,7 @@ def fetch_and_convert_data():
                 activity = 'Tennis'
             
             # Skip test
-            if phone_number in MUTED_NUMBERS:
+            if phone_number in MUTED_NUMBERS or phone_number in ALREADY_BOOKED_NUMBERS:
                 continue
             
             # Extract date and time range from start_time and end_time
