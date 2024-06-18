@@ -10,6 +10,7 @@ import urllib
 import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
+MUTE = True
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
@@ -134,6 +135,7 @@ def strip_activity(activity):
 
 
 def fetch_user_queries():
+    
     # TODO(Charlie, Dice): Fetch these from DB.
     return {'000-000-0000': {'date': '06/18/2024', 'interval': '30', 'time_range': ['11:00AM', '5:00PM'], 'activity_filter': 'Pickleball / Mini Tennis', 'name': 'Fabian'},
             '111-111-1111': {'date': '06/25/2024', 'interval': '60', 'time_range': ['3:00PM', '8:00PM'], 'activity_filter': 'Tennis', 'name': 'Johnboy'},
@@ -164,6 +166,51 @@ def fetch_available_times(input_date, input_interval, input_time_range, activity
 
     return filtered_activities
 
+def fetch_and_convert_data():
+    # URL of the API
+    url = 'https://bookmecourts.fly.dev/api/v1/bookings'
+    
+    # Send a GET request to the API
+    response = requests.get(url)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Parse the JSON response
+        data = response.json()['data']
+        
+        # Convert the data to the desired format
+        converted_data = {}
+        for item in data:
+            phone_number = item['phone_number']
+            start_time = item['start_time']
+            end_time = item['end_time']
+            
+            # Extract date and time range from start_time and end_time
+            date = start_time.split('T')[0]  # Get the date part
+            start_time_obj = datetime.strptime(start_time.split('T')[1][:5], '%H:%M')
+            end_time_obj = datetime.strptime(end_time.split('T')[1][:5], '%H:%M')
+            
+            # Format time to 12-hour format with AM/PM
+            start_time_formatted = start_time_obj.strftime('%I:%M%p')
+            end_time_formatted = end_time_obj.strftime('%I:%M%p')
+            
+            # Create the formatted entry
+            converted_data[phone_number] = {
+                'date': date,
+                'interval': '60',  # Default interval
+                'time_range': [start_time_formatted, end_time_formatted],  # Default time range
+                'activity_filter': 'Tennis',  # Default activity filter
+                'name': 'Dummy'  # Default name
+            }
+        
+        return converted_data
+    else:
+        print("Failed to fetch data from API")
+        return {}
+
+# Example usage
+converted_data = fetch_and_convert_data()
+print(converted_data)
 
 ########################## FUNCTIONS ##############################
 if __name__ == "__main__":
@@ -176,7 +223,7 @@ if __name__ == "__main__":
     print(f"API_TOKEN: {api_token}")
     print(f"USER_TOKEN: {user_token}")
 
-    queries = fetch_user_queries()
+    queries = fetch_and_convert_data()
     activity_results = {}
     for phone, query in queries.items():
         input_date = query['date']
@@ -189,7 +236,7 @@ if __name__ == "__main__":
             activity_results[phone] = filtered_activities
 
     # If filtered activities is not empty, send a pushbullet notification (with info + link)
-    if len(activity_results) > 0:
+    if len(activity_results) > 0 and not MUTE:
         send_notification("Activities available!", activity_results,
                           'https://gtc.clubautomation.com', api_token, user_token)
 
