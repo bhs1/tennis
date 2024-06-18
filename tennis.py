@@ -197,5 +197,9 @@ if __name__ == "__main__":
     if len(activity_results) > 0:
         send_notification("Activities available!", activity_results,
                           'https://gtc.clubautomation.com', api_token, user_token)
+    with open('activity_results.txt', 'a') as f:
+        entry = {"timestamp": str(datetime.now()), "data": activity_results}
+        json.dump(entry, f)
+        f.write("\n")
 
     print(f"Activity results: {activity_results}")
