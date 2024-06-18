@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import argparse
 import json
-import http.client, urllib
+import http.client
+import urllib
 
 ###################### START CONSTANTS ####################
 
@@ -45,30 +46,21 @@ params = {
 ###################### PARSE INPUT #############################
 # Parse inputs
 parser = argparse.ArgumentParser(description='Accept input variables')
-
-parser.add_argument('--input_date', type=str, help='Input date in mm/dd/yyyy format')
-parser.add_argument('--input_interval', type=int, help='Input interval in minutes')
-parser.add_argument('--input_time_range', nargs='+', type=str, help='Input time range as a list of start and end times in hh:mm[am/pm] format')
 parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-parser.add_argument('--activity_filter', type=str, help='Tennis or  Pickleball / Mini Tennis')
-
 args = parser.parse_args()
 
-input_date = args.input_date
-input_interval = args.input_interval
-input_time_range = args.input_time_range
 _debug = args.debug
-activity_filter = args.activity_filter
 
 ###################### END PARSE INPUT #############################
 ###################### FUNCTIONS ###############################
+
 
 def get_raw_response(date, interval):
     '''
     date: E.g. '04/13/2023'
     interval: '30', '45', or '60'
     '''
-    
+
     data = {
         'reservation-list-page': '1',
         'user_id': '25397',
@@ -97,12 +89,13 @@ def get_raw_response(date, interval):
     )
     return response
 
+
 def filter_activities_by_time_and_activity(activities, input_time_range, raw_activity_filter):
     filtered_activities = {}
     lower_time_obj = datetime.strptime(input_time_range[0], '%I:%M%p')
     upper_time_obj = datetime.strptime(input_time_range[1], '%I:%M%p')
     activity_filter = strip_activity(raw_activity_filter)
-    
+
     for activity, times in activities.items():
         # Filter by activity filter
         if activity_filter != '' and activity != activity_filter:
@@ -117,37 +110,34 @@ def filter_activities_by_time_and_activity(activities, input_time_range, raw_act
     return filtered_activities
 
 # TODO: Fix this so that you can send to specific devices with specific times.
+
+
 def send_notification(title, body, url, api_token, user_token):
     print("Message sent.")
     if _debug:
-        print("user_token,api_token=",user_token,api_token)
+        print("user_token,api_token=", user_token, api_token)
 
     conn = http.client.HTTPSConnection("api.pushover.net:443")
     conn.request("POST", "/1/messages.json",
-    urllib.parse.urlencode({
-        "token": api_token,
-        "user": user_token,
-        "message": body,
-        "url": url,
-        "title": title,
-    }), { "Content-type": "application/x-www-form-urlencoded" })
+                 urllib.parse.urlencode({
+                     "token": api_token,
+                     "user": user_token,
+                     "message": body,
+                     "url": url,
+                     "title": title,
+                 }), {"Content-type": "application/x-www-form-urlencoded"})
     conn.getresponse()
 
+# TODO: See how we handle duplicates
 def strip_activity(activity):
     return activity.replace("-", "").replace(" ", "")
 
-########################## FUNCTIONS ##############################
-
-if __name__ == "__main__":
-        # Load environment variables from .env file
-    load_dotenv()
-
-    # Now you can use os.getenv to access your variables
-    api_token = os.getenv('PUSHOVER_API_TOKEN')
-    user_token = os.getenv('PUSHOVER_USER_TOKEN')
-    print(f"API_TOKEN: {api_token}")
-    print(f"USER_TOKEN: {user_token}")
+def fetch_user_queries():
+    # TODO(Charlie, Dice): Fetch these from DB.
+    return {'000-000-0000': {'date': '06/24/2024', 'interval': '60', 'time_range': ['12:00AM', '11:00PM'], 'activity_filter': 'Pickleball / Mini Tennis', 'name': 'Fabian'},
+            '111-111-1111': {'date': '06/25/2024', 'interval': '60', 'time_range': ['3:00PM', '8:00PM'], 'activity_filter': 'Tennis', 'name': 'Johnboy'}}
     
+def fetch_available_times(input_date, input_interval, input_time_range, activity_filter):
     # Get response
     response = get_raw_response(input_date, input_interval)
 
@@ -171,15 +161,41 @@ if __name__ == "__main__":
         times = []
         for a in td.find_all('a'):
             times.append(a.text.strip())
-        activities[strip_activity(activity)] = times 
+        activities[strip_activity(activity)] = times
 
     if _debug:
         print(activities)
 
-    filtered_activities = filter_activities_by_time_and_activity(activities, input_time_range, activity_filter)
+    filtered_activities = filter_activities_by_time_and_activity(
+        activities, input_time_range, activity_filter)
+    
+    return filtered_activities
+
+########################## FUNCTIONS ##############################
+if __name__ == "__main__":
+    # Load environment variables from .env file
+    load_dotenv()
+
+    # Now you can use os.getenv to access your variables
+    api_token = os.getenv('PUSHOVER_API_TOKEN')
+    user_token = os.getenv('PUSHOVER_USER_TOKEN')
+    print(f"API_TOKEN: {api_token}")
+    print(f"USER_TOKEN: {user_token}")
+
+    queries = fetch_user_queries()
+    activity_results = {}
+    for phone, query in queries.items():
+        input_date = query['date']
+        input_interval = query['interval']
+        input_time_range = query['time_range']
+        activity_filter = query['activity_filter']
+        filtered_activities = fetch_available_times(input_date, input_interval, input_time_range, activity_filter)
+        if len(filtered_activities) > 0:
+            activity_results[phone] = filtered_activities
 
     # If filtered activities is not empty, send a pushbullet notification (with info + link)
-    if len(filtered_activities) > 0:
-        send_notification("Activities available!", filtered_activities, 'https://gtc.clubautomation.com', api_token, user_token)
+    if len(activity_results) > 0:
+        send_notification("Activities available!", activity_results,
+                          'https://gtc.clubautomation.com', api_token, user_token)
 
-    print(filtered_activities)
+    print(f"Activity results: {activity_results}")
