@@ -199,7 +199,7 @@ if __name__ == "__main__":
                           'https://gtc.clubautomation.com', api_token, user_token)
 
     # Add to log
-    with open('activity_results.txt', 'a') as f:
+    with open('logs/activity_results.txt', 'a') as f:
         entry = {"timestamp": str(datetime.now()), "data": activity_results}
         json.dump(entry, f)
         f.write("\n")
