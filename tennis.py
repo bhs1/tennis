@@ -11,6 +11,7 @@ import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
 MUTE = True
+MUTED_NUMBERS = ['9179038697', 'test-test-test']
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
@@ -181,9 +182,14 @@ def fetch_and_convert_data():
         # Convert the data to the desired format
         converted_data = {}
         for item in data:
+
             phone_number = item['phone_number']
             start_time = item['start_time']
             end_time = item['end_time']
+            
+            # Skip test
+            if phone_number in MUTED_NUMBERS:
+                continue
             
             # Extract date and time range from start_time and end_time
             date = start_time.split('T')[0]  # Get the date part
