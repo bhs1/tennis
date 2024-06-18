@@ -14,7 +14,7 @@ import urllib
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
-    'PHPSESSID': '94jvsojuojt2cvo66smu0puor5',
+    'PHPSESSID': 'gkh6l4o78mgvr1vflh86aa8g5m',
     'SessionExpirationTime': '1718716227',
     'isLoggedIn': '1',
 }
