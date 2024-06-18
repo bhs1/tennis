@@ -8,6 +8,8 @@ import json
 import http.client
 import urllib
 
+# TODO(Ben, P2): See how we handle duplicates case.
+
 ###################### START CONSTANTS ####################
 
 cookies = {
@@ -109,8 +111,6 @@ def filter_activities_by_time_and_activity(activities, input_time_range, raw_act
             filtered_activities[activity] = filtered_times
     return filtered_activities
 
-# TODO: Fix this so that you can send to specific devices with specific times.
-
 
 def send_notification(title, body, url, api_token, user_token):
     print("Message sent.")
@@ -128,7 +128,6 @@ def send_notification(title, body, url, api_token, user_token):
                  }), {"Content-type": "application/x-www-form-urlencoded"})
     conn.getresponse()
 
-# TODO: See how we handle duplicates
 def strip_activity(activity):
     return activity.replace("-", "").replace(" ", "")
 
