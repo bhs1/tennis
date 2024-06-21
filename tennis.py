@@ -19,6 +19,7 @@ os.makedirs('data', exist_ok=True)
 logging.basicConfig(filename='logs/info.txt', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
 
 # TODO: Let people know how many others have been notified of these available courts. (probably none for now)
+# TODO: Add rate limiting for phone numbers in case someone decides to spam my twilio.
 
 class QueryKey:
     def __init__(self, phone_number, date, start_time, end_time, activity):
