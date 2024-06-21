@@ -10,6 +10,13 @@ import urllib
 import ai_gen_files.successful_response_func as response_ai_gen
 import hashlib
 import shelve
+import logging
+
+# Ensure the directory for the log file exists
+os.makedirs('data', exist_ok=True)
+
+# Configure logging
+logging.basicConfig(filename='logs/info.txt', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
 
 # TODO: Let people know how many others have been notified of these available courts. (probably none for now)
 
@@ -146,9 +153,9 @@ def filter_activities_by_time_and_activity(activities, input_time_range, raw_act
 
 
 def send_notification(title, body, url, api_token, user_token):
-    print("Message sent.")
+    logging.info("Message sent.")
     if _debug:
-        print("user_token,api_token=", user_token, api_token)
+        logging.info(f"user_token,api_token={user_token},{api_token}")
 
     conn = http.client.HTTPSConnection("api.pushover.net:443")
     conn.request("POST", "/1/messages.json",
@@ -186,9 +193,9 @@ For questions or complaints please email bookingbotbros@gmail.com."""
         to=phone_number
     )
 
-    print(f"Sending text to {phone_number}:\n{message}")
+    logging.info(f"Sending text to {phone_number}:\n{message}")
     if _debug:
-        print("Message sent using Twilio.")
+        logging.info("Message sent using Twilio.")
         
 
 
@@ -209,19 +216,18 @@ def fetch_available_times(input_date, input_interval, input_time_range, activity
     response = get_raw_response(input_date, input_interval)
 
     if _debug:
-        print("Raw response:\n" + response.text)
+        logging.info("Raw response:\n" + response.text)
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
     if 'First time here' in response.text:
         e_string = "ERROR: Got login page. Try replacing PHP Session ID with a fresh one!"
-        print(e_string)
+        logging.error(e_string)
         send_notification("ERROR!", e_string, "", api_token, user_token)
 
     activities = response_ai_gen.func(response.text)
 
-    if _debug:
-        print(activities)
+    logging.info(f"Activities: {activities}")
 
     filtered_activities = filter_activities_by_time_and_activity(
         activities, input_time_range, activity_filter)    
@@ -247,6 +253,7 @@ def fetch_and_convert_data():
     if response.status_code == 200:
         # Parse the JSON response
         data = response.json()['data']
+        logging.info(f"Data fetched successfully from API: {data}")
         
         # Convert the data to the desired format
         converted_data = {}
@@ -294,7 +301,7 @@ def fetch_and_convert_data():
             }
         return converted_data
     else:
-        print("Failed to fetch data from API")
+        logging.error("Failed to fetch data from API")
         return {}
 
 # If the notification is not silenced
@@ -324,7 +331,7 @@ def remove_query(query):
 def should_run():
     current_hour = datetime.now().hour
     if current_hour >= 22 or current_hour < 8:
-        print(f"{datetime.now()}: Script not run due to night time hours.")
+        logging.info(f"{datetime.now()}: Script not run due to night time hours.")
         return False
     return True
 
@@ -341,13 +348,18 @@ def process_queries(queries):
             input_date, input_interval, input_time_range, activity_filter)
    
         if len(filtered_activities) == 0:
+            logging.info(f"No activities found for {query}")
             remove_query(query)
         
-        if len(filtered_activities) > 0 and should_notify(query):
-            print(f"Sending text to {phone} with {filtered_activities} for {query}")
-            send_text(phone, filtered_activities, query)
-            update_notified(query)
-            activity_results[str(QueryKey.from_query(query))] = filtered_activities
+        if len(filtered_activities) > 0:
+            logging.info(f"Filtered activities found for {query}")
+            if should_notify(query):
+                logging.info(f"Sending text to {phone} with {filtered_activities} for {query}")
+                send_text(phone, filtered_activities, query)
+                update_notified(query)
+                activity_results[str(QueryKey.from_query(query))] = filtered_activities
+            else:
+                logging.info(f"Notification not sent for {query}")
     
     return activity_results
 
@@ -378,6 +390,7 @@ if __name__ == "__main__":
     remove_old_entries()
 
     queries = fetch_and_convert_data()
+    logging.info(f"Queries: {queries}")
     activity_results = process_queries(queries)
 
     if len(activity_results) > 0 and not MUTE:
@@ -386,4 +399,4 @@ if __name__ == "__main__":
 
     log_activity_results(activity_results)
 
-    print(f"Activity results: {activity_results}")
+    logging.info(f"Activity results: {activity_results}")
