@@ -177,7 +177,7 @@ def send_text(phone_number, activities, query):
     end_time = query['time_range'][1]
     message += f"Go to https://gtc.clubautomation.com/ and search:\nDate: {date}\nStart Time: {start_time}\nEnd Time: {end_time}\n"
     message += """To stop alerts, go to https://bookmecourts.fly.dev/. \
-For questions or complaints please email bookingbotbros@gmail.com."""
+For questions or complaints please email bensc77@gmail.com."""
 
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
     auth_token = os.getenv("TWILIO_AUTH_TOKEN")
