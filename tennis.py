@@ -11,12 +11,12 @@ import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
 MUTE = True
-MUTED_NUMBERS = ['9179038697', 'test-test-test', 'test', 'test1']
+MUTED_NUMBERS = ['9179038697', 'test-test-test', 'test', 'test1', '6467611319']
 
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
-    'PHPSESSID': 'gkh6l4o78mgvr1vflh86aa8g5m',
+    'PHPSESSID': '8e8uc4n950se7el9l7mdt72csv',
     'SessionExpirationTime': '1718716227',
     'isLoggedIn': '1',
 }
@@ -131,6 +131,36 @@ def send_notification(title, body, url, api_token, user_token):
                  }), {"Content-type": "application/x-www-form-urlencoded"})
     conn.getresponse()
 
+from twilio.rest import Client
+
+def send_text(phone_number, activities, query):
+    message = f"Activities available for {phone_number}:\n"
+    for activity, times in activities.items():
+        message += f"{activity}: {times}\n"
+    date = query['date']
+    start_time = query['time_range'][0]
+    end_time = query['time_range'][1]
+    message += f"Go to https://gtc.clubautomation.com/ and search:\nDate: {date}\nStart Time: {start_time}\nEnd Time: {end_time}\n"
+    message += """To stop alerts, go to https://bookmecourts.fly.dev/. \
+For questions or complaints please email bookingbotbros@gmail.com."""
+
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    from_number = os.getenv("TWILIO_PHONE_NUMBER")
+
+    client = Client(account_sid, auth_token)
+
+    client.messages.create(
+        body=message,
+        from_=from_number,
+        to=phone_number
+    )
+
+    print(f"Sending text to {phone_number}:\n{message}")
+    if _debug:
+        print("Message sent using Twilio.")
+        
+
 
 def strip_activity(activity):
     return activity.replace("-", "").replace(" ", "")
@@ -209,6 +239,7 @@ def fetch_and_convert_data():
             end_time_formatted = end_time_obj.strftime('%I:%M%p')
             
             # Create the formatted entry
+            # Note: if user has multiple entries, we just take the latest
             converted_data[phone_number] = {
                 'date': date,
                 'interval': '60',  # Default interval
@@ -232,6 +263,9 @@ if __name__ == "__main__":
     user_token = os.getenv('PUSHOVER_USER_TOKEN')
     print(f"API_TOKEN: {api_token}")
     print(f"USER_TOKEN: {user_token}")
+    
+    # Test
+    send_text("+19179038697", {"Tennis": ["11:00AM", "5:00PM"]}, {"date": "06/18/2024", "interval": "30", "time_range": ["11:00AM", "5:00PM"], "activity_filter": "Tennis", "name": "Fabian"})
 
     queries = fetch_and_convert_data()
     activity_results = {}
@@ -243,6 +277,7 @@ if __name__ == "__main__":
         filtered_activities = fetch_available_times(
             input_date, input_interval, input_time_range, activity_filter)
         if len(filtered_activities) > 0:
+            send_text(phone, filtered_activities, query)
             activity_results[phone] = filtered_activities
 
     # If filtered activities is not empty, send a pushbullet notification (with info + link)
