@@ -12,11 +12,8 @@ import hashlib
 import shelve
 import logging
 
-# Ensure the directory for the log file exists
-os.makedirs('data', exist_ok=True)
-
 # Configure logging
-logging.basicConfig(filename='logs/info.txt', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
+logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
 
 # TODO: Let people know how many others have been notified of these available courts. (probably none for now)
 # TODO: Add rate limiting for phone numbers in case someone decides to spam my twilio.
@@ -370,13 +367,13 @@ def log_activity_results(activity_results):
     Logs the activity results to a file with a timestamp.
     """
     try:
-        with open('logs/activity_results.txt', 'a') as f:
+        with open(os.path.expanduser('~/Projects/tennis/logs/activity_results.txt'), 'a') as f:
             entry = {"timestamp": str(datetime.now()), "data": activity_results}
             json.dump(entry, f)
             f.write("\n")
     except FileNotFoundError:
-        os.makedirs('logs', exist_ok=True)
-        with open('logs/activity_results.txt', 'a') as f:
+        os.makedirs(os.path.expanduser('~/Projects/tennis/logs'), exist_ok=True)
+        with open(os.path.expanduser('~/Projects/tennis/logs/activity_results.txt'), 'a') as f:
             entry = {"timestamp": str(datetime.now()), "data": activity_results}
             json.dump(entry, f)
             f.write("\n")
