@@ -11,15 +11,16 @@ import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
 MUTE = False
-MUTED_NUMBERS = ['9179038697', 'test-test-test', 'test', 'test1']
+MUTED_NUMBERS = ['9179038697', 'test-test-test', 'test', 'test1', '6467611319']
 ALREADY_BOOKED_NUMBERS = [
-    '3042765830' # Akshay
+    '3042765830', # Akshay
+    '6105634153' # Jack
 ]
 
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
-    'PHPSESSID': 'gkh6l4o78mgvr1vflh86aa8g5m',
+    'PHPSESSID': '8e8uc4n950se7el9l7mdt72csv',
     'SessionExpirationTime': '1718716227',
     'isLoggedIn': '1',
 }
