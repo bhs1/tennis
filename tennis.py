@@ -11,7 +11,11 @@ import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
 MUTE = True
-MUTED_NUMBERS = ['9179038697', 'test-test-test', 'test', 'test1', '6467611319']
+MUTED_NUMBERS = ['9179038697',
+                 'test-test-test',
+                 'test',
+                 'test1',
+                 '6467611319']
 
 ALREADY_BOOKED_NUMBERS = [
     '3042765830' # Akshay
@@ -268,7 +272,7 @@ if __name__ == "__main__":
     print(f"USER_TOKEN: {user_token}")
     
     # Test
-    send_text("+19179038697", {"Tennis": ["11:00AM", "5:00PM"]}, {"date": "06/18/2024", "interval": "30", "time_range": ["11:00AM", "5:00PM"], "activity_filter": "Tennis", "name": "Fabian"})
+    #send_text("+19179038697", {"Tennis": ["11:00AM", "5:00PM"]}, {"date": "06/18/2024", "interval": "30", "time_range": ["11:00AM", "5:00PM"], "activity_filter": "Tennis", "name": "Fabian"})
 
     queries = fetch_and_convert_data()
     activity_results = {}
@@ -280,7 +284,8 @@ if __name__ == "__main__":
         filtered_activities = fetch_available_times(
             input_date, input_interval, input_time_range, activity_filter)
         if len(filtered_activities) > 0:
-            send_text(phone, filtered_activities, query)
+            # Uncomment to enable texting
+            # send_text(phone, filtered_activities, query)
             activity_results[phone] = filtered_activities
 
     # If filtered activities is not empty, send a pushbullet notification (with info + link)
