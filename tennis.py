@@ -11,16 +11,7 @@ import ai_gen_files.successful_response_func as response_ai_gen
 
 ###################### START CONSTANTS ####################
 MUTE = False
-MUTED_NUMBERS = ['9179038697',
-                 'test-test-test',
-                 'test',
-                 'test1',
-                 '6467611319']
-
-ALREADY_BOOKED_NUMBERS = [
-    '3042765830', # Akshay
-    '6105634153' # Jack
-]
+MUTED_NUMBERS = ['test']
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
@@ -234,7 +225,7 @@ def fetch_and_convert_data():
                 activity = 'Tennis'
             
             # Skip test
-            if phone_number in MUTED_NUMBERS or phone_number in ALREADY_BOOKED_NUMBERS:
+            if phone_number in MUTED_NUMBERS:
                 continue
             
             # Extract date and time range from start_time and end_time
@@ -277,7 +268,7 @@ if __name__ == "__main__":
 
     queries = fetch_and_convert_data()
     activity_results = {}
-    for phone, query in queries.items():        
+    for phone, query in queries.items():
         input_date = query['date']
         input_interval = query['interval']
         input_time_range = query['time_range']
