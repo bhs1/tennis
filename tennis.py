@@ -11,6 +11,8 @@ import ai_gen_files.successful_response_func as response_ai_gen
 import hashlib
 import shelve
 
+# TODO: Let people know how many others have been notified of these available courts. (probably none for now)
+
 class QueryKey:
     def __init__(self, phone_number, date, start_time, end_time, activity):
         self.phone_number = phone_number
@@ -226,6 +228,14 @@ def fetch_available_times(input_date, input_interval, input_time_range, activity
 
     return filtered_activities
 
+def format_phone_number(raw_phone):
+    if raw_phone.startswith('+1'):
+        return raw_phone
+    elif raw_phone.startswith('1'):
+        return '+' + raw_phone
+    else:
+        return '+1' + raw_phone
+
 def fetch_and_convert_data():
     # URL of the API
     url = 'https://bookmecourts.fly.dev/api/v1/bookings'
@@ -242,7 +252,7 @@ def fetch_and_convert_data():
         converted_data = {}
         for item in data:
 
-            phone_number = item['phone_number']
+            phone_number = format_phone_number(item['phone_number'])
             start_time = item['start_time']
             end_time = item['end_time']
             activity = item['activity']
