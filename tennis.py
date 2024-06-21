@@ -305,26 +305,27 @@ def fetch_and_convert_data():
         logging.error("Failed to fetch data from API")
         return {}
 
-# If the notification is not silenced
+# Define the path for the notified_db
+NOTIFIED_DB_PATH = os.path.expanduser('~/Projects/tennis/notified_db')
+
 def should_notify(query):
-    with shelve.open('notified_db') as db:
+    with shelve.open(NOTIFIED_DB_PATH) as db:
         return QueryKey.from_query(query).hash not in db  # Use the hash attribute
 
-# Silence notification for 12 hours.
 def update_notified(query):
-    with shelve.open('notified_db') as db:
+    with shelve.open(NOTIFIED_DB_PATH) as db:
         # Store the datetime and query as a tuple
         db[QueryKey.from_query(query).hash] = (datetime.now().isoformat(), query)
 
 def remove_old_entries():
     twelve_hours_ago = datetime.now() - timedelta(hours=12)
-    with shelve.open('notified_db') as db:
+    with shelve.open(NOTIFIED_DB_PATH) as db:
         keys_to_delete = [key for key, value in db.items() if datetime.fromisoformat(value[0]) < twelve_hours_ago]
         for key in keys_to_delete:
             del db[key]
 
 def remove_query(query):
-    with shelve.open('notified_db') as db:
+    with shelve.open(NOTIFIED_DB_PATH) as db:
         query_hash = QueryKey.from_query(query).hash
         if query_hash in db:
             del db[query_hash]
