@@ -2,3 +2,4 @@ venv
 tennis_env
 .env
 logs/
+notified_db.db

@@ -2,12 +2,41 @@ import os
 from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
 import argparse
 import json
 import http.client
 import urllib
 import ai_gen_files.successful_response_func as response_ai_gen
+import hashlib
+import shelve
+
+class QueryKey:
+    def __init__(self, phone_number, date, start_time, end_time, activity):
+        self.phone_number = phone_number
+        self.date = date
+        self.start_time = start_time
+        self.end_time = end_time
+        self.activity = activity
+        self.hash = self.generate_hash()
+
+    @classmethod
+    def from_query(cls, query):
+        # Create a QueryKey instance from a query dictionary
+        return cls(
+            phone_number=query['phone_number'],
+            date=query['date'],
+            start_time=query['time_range'][0],
+            end_time=query['time_range'][1],
+            activity=query['activity_filter']
+        )
+
+    def generate_hash(self):
+        unique_string = f"{self.phone_number}-{self.date}-{self.start_time}-{self.end_time}-{self.activity}"
+        return hashlib.md5(unique_string.encode()).hexdigest()
+
+    def __repr__(self):
+        return f"({self.phone_number}, {self.date}, {self.start_time}, {self.end_time}, {self.activity})"
 
 ###################### START CONSTANTS ####################
 MUTE = False
@@ -239,7 +268,14 @@ def fetch_and_convert_data():
             
             # Create the formatted entry
             # Note: if user has multiple entries, we just take the latest
-            converted_data[phone_number] = {
+            query_key = QueryKey.from_query({
+                'phone_number': phone_number,
+                'date': date,
+                'time_range': [start_time_formatted, end_time_formatted],
+                'activity_filter': activity
+            })
+            converted_data[query_key] = {
+                'phone_number': phone_number,
                 'date': date,
                 'interval': '60',  # Default interval
                 'time_range': [start_time_formatted, end_time_formatted],  # Default time range
@@ -251,53 +287,93 @@ def fetch_and_convert_data():
         print("Failed to fetch data from API")
         return {}
 
+# If the notification is not silenced
+def should_notify(query):
+    with shelve.open('notified_db') as db:
+        return QueryKey.from_query(query).hash not in db  # Use the hash attribute
 
-########################## FUNCTIONS ##############################
-if __name__ == "__main__":
-    # Load environment variables from .env file
-    load_dotenv()
+# Silence notification for 12 hours.
+def update_notified(query):
+    with shelve.open('notified_db') as db:
+        # Store the datetime and query as a tuple
+        db[QueryKey.from_query(query).hash] = (datetime.now().isoformat(), query)
 
-    # Now you can use os.getenv to access your variables
-    api_token = os.getenv('PUSHOVER_API_TOKEN')
-    user_token = os.getenv('PUSHOVER_USER_TOKEN')
-    print(f"API_TOKEN: {api_token}")
-    print(f"USER_TOKEN: {user_token}")
-    
-    # Test
-    #send_text("+19179038697", {"Tennis": ["11:00AM", "5:00PM"]}, {"date": "06/18/2024", "interval": "30", "time_range": ["11:00AM", "5:00PM"], "activity_filter": "Tennis", "name": "Fabian"})
+def remove_old_entries():
+    twelve_hours_ago = datetime.now() - timedelta(hours=12)
+    with shelve.open('notified_db') as db:
+        keys_to_delete = [key for key, value in db.items() if datetime.fromisoformat(value[0]) < twelve_hours_ago]
+        for key in keys_to_delete:
+            del db[key]
 
-    queries = fetch_and_convert_data()
+def remove_query(query):
+    with shelve.open('notified_db') as db:
+        query_hash = QueryKey.from_query(query).hash
+        if query_hash in db:
+            del db[query_hash]
+
+def should_run():
+    current_hour = datetime.now().hour
+    if current_hour >= 22 or current_hour < 8:
+        print(f"{datetime.now()}: Script not run due to night time hours.")
+        return False
+    return True
+
+def process_queries(queries):
     activity_results = {}
-    for phone, query in queries.items():
+    for key, query in queries.items():
         input_date = query['date']
+        phone = query['phone_number']
         input_interval = query['interval']
         input_time_range = query['time_range']
         activity_filter = query['activity_filter']
+        
         filtered_activities = fetch_available_times(
             input_date, input_interval, input_time_range, activity_filter)
-        if len(filtered_activities) > 0:
-            # Uncomment to enable texting
-            # send_text(phone, filtered_activities, query)
-            activity_results[phone] = filtered_activities
+   
+        if len(filtered_activities) == 0:
+            remove_query(query)
+        
+        if len(filtered_activities) > 0 and should_notify(query):
+            print(f"Sending text to {phone} with {filtered_activities} for {query}")
+            send_text(phone, filtered_activities, query)
+            update_notified(query)
+            activity_results[str(QueryKey.from_query(query))] = filtered_activities
+    
+    return activity_results
 
-    # If filtered activities is not empty, send a pushbullet notification (with info + link)
-    if len(activity_results) > 0 and not MUTE:
-        send_notification("Activities available!", activity_results,
-                          'https://gtc.clubautomation.com', api_token, user_token)
-
-    # Add to log
+def log_activity_results(activity_results):
+    """
+    Logs the activity results to a file with a timestamp.
+    """
     try:
         with open('logs/activity_results.txt', 'a') as f:
-            entry = {"timestamp": str(datetime.now()),
-                     "data": activity_results}
+            entry = {"timestamp": str(datetime.now()), "data": activity_results}
             json.dump(entry, f)
             f.write("\n")
     except FileNotFoundError:
         os.makedirs('logs', exist_ok=True)
         with open('logs/activity_results.txt', 'a') as f:
-            entry = {"timestamp": str(datetime.now()),
-                     "data": activity_results}
+            entry = {"timestamp": str(datetime.now()), "data": activity_results}
             json.dump(entry, f)
             f.write("\n")
+
+if __name__ == "__main__":
+    if not should_run():
+        exit()
+
+    load_dotenv()
+    api_token = os.getenv('PUSHOVER_API_TOKEN')
+    user_token = os.getenv('PUSHOVER_USER_TOKEN')
+
+    remove_old_entries()
+
+    queries = fetch_and_convert_data()
+    activity_results = process_queries(queries)
+
+    if len(activity_results) > 0 and not MUTE:
+        send_notification("Activities available!", activity_results,
+                          'https://gtc.clubautomation.com', api_token, user_token)
+
+    log_activity_results(activity_results)
 
     print(f"Activity results: {activity_results}")
