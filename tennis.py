@@ -11,6 +11,7 @@ import ai_gen_files.successful_response_func as response_ai_gen
 import hashlib
 import shelve
 import logging
+from auth import login_and_get_phpid
 
 # Configure logging
 logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
@@ -51,7 +52,7 @@ MUTED_NUMBERS = ['test']
 
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
-    'PHPSESSID': '8e8uc4n950se7el9l7mdt72csv',
+    'PHPSESSID': 'ql1m8sc43aaj3636ifr1nmcct3',
     'SessionExpirationTime': '1718716227',
     'isLoggedIn': '1',
 }
@@ -94,7 +95,7 @@ _debug = args.debug
 ###################### FUNCTIONS ###############################
 
 
-def get_raw_response(date, interval):
+def get_raw_response(date, interval, cookie):
     '''
     date: E.g. '04/13/2023'
     interval: '30', '45', or '60'
@@ -118,6 +119,8 @@ def get_raw_response(date, interval):
         'courtsnotavailable': '',
         'join-waitlist-case': '1',
     }
+
+    cookies['PHPSESSID'] = cookie
 
     response = requests.post(
         'https://gtc.clubautomation.com/event/reserve-court-new',
@@ -209,9 +212,22 @@ def fetch_user_queries():
             '222-222-2222': {'date': '06/18/2024', 'interval': '30', 'time_range': ['11:00AM', '5:00PM'], 'activity_filter': 'Tennis', 'name': 'Jacobi'}}
 
 
-def fetch_available_times(input_date, input_interval, input_time_range, activity_filter):
+def ensure_logged_in():
+    # Try to fetch a response with dummy data to check login status
+    with shelve.open(os.path.expanduser('~/Projects/tennis/session_db')) as db:
+        cookie = db.get('PHPSESSID', cookies['PHPSESSID'])  # Retrieve the PHPSESSID from the database, if available
+    dummy_response = get_raw_response('01/01/2000', '30', cookie)  # Use a dummy date and interval
+    if 'First time here' in dummy_response.text:
+        cookie = login_and_get_phpid()
+        logging.info(f"Logged in with new cookie: {cookie}")
+        print("logging in with new cookie.")
+        with shelve.open(os.path.expanduser('~/Projects/tennis/session_db')) as db:
+            db['PHPSESSID'] = cookie  # Store the new PHPSESSID in the database
+    return cookie
+
+def fetch_available_times(input_date, input_interval, input_time_range, activity_filter, cookie):
     # Get response
-    response = get_raw_response(input_date, input_interval)
+    response = get_raw_response(input_date, input_interval, cookie)
 
     if _debug:
         logging.info("Raw response:\n" + response.text)
@@ -221,7 +237,9 @@ def fetch_available_times(input_date, input_interval, input_time_range, activity
     if 'First time here' in response.text:
         e_string = "ERROR: Got login page. Try replacing PHP Session ID with a fresh one!"
         logging.error(e_string)
+        print(e_string)
         send_notification("ERROR!", e_string, "", api_token, user_token)
+        exit()
 
     activities = response_ai_gen.func(response.text)
 
@@ -336,6 +354,9 @@ def should_run():
 
 def process_queries(queries):
     activity_results = {}
+    
+    cookie = ensure_logged_in()
+    
     for key, query in queries.items():
         input_date = query['date']
         phone = query['phone_number']
@@ -344,7 +365,7 @@ def process_queries(queries):
         activity_filter = query['activity_filter']
         
         filtered_activities = fetch_available_times(
-            input_date, input_interval, input_time_range, activity_filter)
+            input_date, input_interval, input_time_range, activity_filter, cookie)
    
         if len(filtered_activities) == 0:
             logging.info(f"No activities found for {query}")
@@ -385,6 +406,8 @@ if __name__ == "__main__":
     load_dotenv()
     api_token = os.getenv('PUSHOVER_API_TOKEN')
     user_token = os.getenv('PUSHOVER_USER_TOKEN')
+    
+    
 
     remove_old_entries()
 

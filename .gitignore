@@ -3,3 +3,4 @@ tennis_env
 .env
 logs/
 notified_db.db
+session_db.db
