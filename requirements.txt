@@ -12,6 +12,7 @@ idna==3.4
 multidict==6.0.5
 PyJWT==2.8.0
 python-dotenv==1.0.1
+pytz==2024.1
 requests==2.31.0
 soupsieve==2.5
 twilio==9.2.0

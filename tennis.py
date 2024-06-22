@@ -12,6 +12,7 @@ import hashlib
 import shelve
 import logging
 from auth import login_and_get_phpid
+import pytz
 
 # Configure logging
 logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
@@ -346,9 +347,10 @@ def remove_query(query):
             del db[query_hash]
 
 def should_run():
-    current_hour = datetime.now().hour
+    pacific_time = datetime.now(pytz.timezone('US/Pacific'))
+    current_hour = pacific_time.hour
     if current_hour >= 22 or current_hour < 8:
-        logging.info(f"{datetime.now()}: Script not run due to night time hours.")
+        logging.info(f"{pacific_time}: Script not run due to night time hours.")
         return False
     return True
 
