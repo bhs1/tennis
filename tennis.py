@@ -17,6 +17,7 @@ import pytz
 # Configure logging
 logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
 
+# TODO: Add random time delay to avoid bot detection (1-3 seconds random distribution for each request)
 # TODO: Let people know when they missed times.
 # TODO: Add booking capability.
 # TODO: Add rate limiting for phone numbers in case someone decides to spam my twilio.
@@ -50,7 +51,7 @@ class QueryKey:
         return f"({self.phone_number}, {self.date}, {self.start_time}, {self.end_time}, {self.activity})"
 
 ###################### START CONSTANTS ####################
-MUTE = True
+MUTE = False
 MUTED_NUMBERS = ['test']
 
 cookies = {
