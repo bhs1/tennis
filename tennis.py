@@ -17,8 +17,10 @@ import pytz
 # Configure logging
 logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
 
-# TODO: Let people know how many others have been notified of these available courts. (probably none for now)
+# TODO: Let people know when they missed times.
+# TODO: Add booking capability.
 # TODO: Add rate limiting for phone numbers in case someone decides to spam my twilio.
+# TODO: Let people know how many others have been notified of these available courts. (probably none for now)
 
 class QueryKey:
     def __init__(self, phone_number, date, start_time, end_time, activity):
@@ -48,7 +50,7 @@ class QueryKey:
         return f"({self.phone_number}, {self.date}, {self.start_time}, {self.end_time}, {self.activity})"
 
 ###################### START CONSTANTS ####################
-MUTE = False
+MUTE = True
 MUTED_NUMBERS = ['test']
 
 cookies = {
@@ -354,6 +356,7 @@ def should_run():
         return False
     return True
 
+
 def process_queries(queries):
     activity_results = {}
     
@@ -377,8 +380,9 @@ def process_queries(queries):
             logging.info(f"Filtered activities found for {query}")
             if should_notify(query):
                 logging.info(f"Sending text to {phone} with {filtered_activities} for {query}")
-                send_text(phone, filtered_activities, query)
-                update_notified(query)
+                if not MUTE:
+                    send_text(phone, filtered_activities, query)
+                    update_notified(query)
                 activity_results[str(QueryKey.from_query(query))] = filtered_activities
             else:
                 logging.info(f"Notification not sent for {query}")

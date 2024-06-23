@@ -7,7 +7,7 @@ load_dotenv()
 
 def log(message):
     print(message)
-    with open('logs/login.txt', 'a') as log_file:
+    with open('~/Projects/tennis/logs/login.txt', 'a') as log_file:
         log_file.write(message + "\n")
 
 def login(phpsessionid, login_token):
@@ -83,4 +83,4 @@ def login_and_get_phpid():
     return cookie
 
 if __name__ == "__main__":
-    login_and_get_ids()
+    login_and_get_phpid()
