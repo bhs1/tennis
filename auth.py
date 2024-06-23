@@ -7,7 +7,7 @@ load_dotenv()
 
 def log(message):
     print(message)
-    with open('~/Projects/tennis/logs/login.txt', 'a') as log_file:
+    with open(os.path.expanduser('~/Projects/tennis/logs/login.txt'), 'a') as log_file:
         log_file.write(message + "\n")
 
 def login(phpsessionid, login_token):
