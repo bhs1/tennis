@@ -52,7 +52,7 @@ class QueryKey:
         return f"({self.phone_number}, {self.date}, {self.start_time}, {self.end_time}, {self.activity})"
 
 ###################### START CONSTANTS ####################
-MUTE = True
+MUTE = False
 MUTED_NUMBERS = ['test']
 
 cookies = {
