@@ -19,6 +19,13 @@ import random  # Import the random module
 # Configure logging
 logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
 
+# Load environment variables
+load_dotenv()
+
+# Get MUTE value from .env file
+MUTE = os.getenv('MUTE', 'False').lower() == 'true'
+MUTED_NUMBERS = ['test']
+
 # TODO: Let people know when they missed times.
 # TODO: Add booking capability.
 # TODO: Add rate limiting for phone numbers in case someone decides to spam my twilio.
@@ -52,9 +59,6 @@ class QueryKey:
         return f"({self.phone_number}, {self.date}, {self.start_time}, {self.end_time}, {self.activity})"
 
 ###################### START CONSTANTS ####################
-MUTE = False
-MUTED_NUMBERS = ['test']
-
 cookies = {
     ######## REPLACE THIS IF GOT LOGIN PAGE!!! ########
     'PHPSESSID': 'ql1m8sc43aaj3636ifr1nmcct3',
@@ -250,10 +254,11 @@ def fetch_available_times(input_date, input_interval, input_time_range, activity
 
     activities = response_ai_gen.func(response.text)
 
-    logging.info(f"Activities: {activities}")
+    if _debug:
+        logging.info(f"Activities: {activities}")
 
     filtered_activities = filter_activities_by_time_and_activity(
-        activities, input_time_range, activity_filter)    
+        activities, input_time_range, activity_filter)
 
     return filtered_activities
 
@@ -373,6 +378,10 @@ def process_queries(queries):
         input_time_range = query['time_range']
         activity_filter = query['activity_filter']
         
+        # Skip this iteration if the date is in the past
+        if datetime.strptime(input_date, '%Y-%m-%d').date() < datetime.now().date():
+            logging.info(f"Skipping {query} as the date is in the past.")
+            continue
         
         filtered_activities = fetch_available_times(
             input_date, input_interval, input_time_range, activity_filter, cookie)
@@ -433,3 +442,4 @@ if __name__ == "__main__":
     log_activity_results(activity_results)
 
     logging.info(f"Activity results: {activity_results}")
+
