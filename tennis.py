@@ -19,7 +19,6 @@ import random  # Import the random module
 # Configure logging
 logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
 
-# TODO: Add random time delay to avoid bot detection (1-3 seconds random distribution for each request)
 # TODO: Let people know when they missed times.
 # TODO: Add booking capability.
 # TODO: Add rate limiting for phone numbers in case someone decides to spam my twilio.
@@ -107,7 +106,7 @@ def get_raw_response(date, interval, cookie):
     interval: '30', '45', or '60'
     '''
     # Sleep for a random time between 1 and 3 seconds
-    time.sleep(random.uniform(1, 3))  # Add this line
+    time.sleep(random.uniform(.2, 1))  # Add this line
 
     data = {
         'reservation-list-page': '1',
