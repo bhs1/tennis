@@ -13,6 +13,8 @@ import shelve
 import logging
 from auth import login_and_get_phpid
 import pytz
+import time  # Import the time module
+import random  # Import the random module
 
 # Configure logging
 logging.basicConfig(filename=os.path.expanduser('~/Projects/tennis/logs/info.txt'), level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s', filemode='a')
@@ -51,7 +53,7 @@ class QueryKey:
         return f"({self.phone_number}, {self.date}, {self.start_time}, {self.end_time}, {self.activity})"
 
 ###################### START CONSTANTS ####################
-MUTE = False
+MUTE = True
 MUTED_NUMBERS = ['test']
 
 cookies = {
@@ -104,6 +106,8 @@ def get_raw_response(date, interval, cookie):
     date: E.g. '04/13/2023'
     interval: '30', '45', or '60'
     '''
+    # Sleep for a random time between 1 and 3 seconds
+    time.sleep(random.uniform(1, 3))  # Add this line
 
     data = {
         'reservation-list-page': '1',
@@ -369,6 +373,7 @@ def process_queries(queries):
         input_interval = query['interval']
         input_time_range = query['time_range']
         activity_filter = query['activity_filter']
+        
         
         filtered_activities = fetch_available_times(
             input_date, input_interval, input_time_range, activity_filter, cookie)
