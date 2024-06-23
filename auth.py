@@ -52,6 +52,7 @@ def login(phpsessionid, login_token):
             return True
         else:
             log("Could not log in.")
+            log(f"ERRORS: {response.json().get('messages', 'No message')}")
             return False
 
     except requests.RequestException:
@@ -83,4 +84,5 @@ def login_and_get_phpid():
     return cookie
 
 if __name__ == "__main__":
+    load_dotenv()
     login_and_get_phpid()
